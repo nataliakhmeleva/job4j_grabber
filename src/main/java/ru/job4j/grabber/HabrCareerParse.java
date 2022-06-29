@@ -6,7 +6,6 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import ru.job4j.grabber.utils.DateTimeParser;
-import ru.job4j.grabber.utils.HabrCareerDateTimeParser;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -17,6 +16,7 @@ public class HabrCareerParse implements Parse {
     private static final String SOURCE_LINK = "https://career.habr.com";
 
     private static final String PAGE_LINK = String.format("%s/vacancies/java_developer?page=", SOURCE_LINK);
+    private static final int PAGE = 5;
     private final DateTimeParser dateTimeParser;
 
     public HabrCareerParse(DateTimeParser dateTimeParser) {
@@ -43,17 +43,22 @@ public class HabrCareerParse implements Parse {
         try {
             description = retrieveDescription(vacancyLink);
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new IllegalArgumentException(e);
         }
-        return new Post(vacancyName, vacancyLink, description, new HabrCareerDateTimeParser().parse(date));
+        return new Post(vacancyName, vacancyLink, description, dateTimeParser.parse(date));
     }
 
     @Override
-    public List<Post> list(String link) throws IOException {
+    public List<Post> list(String link) {
         List<Post> list = new ArrayList();
-        for (int i = 1; i < 6; i++) {
-            Connection connection = Jsoup.connect(PAGE_LINK + i);
-            Document document = connection.get();
+        for (int i = 1; i <= PAGE; i++) {
+            Connection connection = Jsoup.connect(String.format("%s%d", link, i));
+            Document document = null;
+            try {
+                document = connection.get();
+            } catch (IOException e) {
+                throw new IllegalArgumentException(e);
+            }
             Elements rows = document.select(".vacancy-card__inner");
             rows.forEach(row -> {
                 list.add(completion(row));
