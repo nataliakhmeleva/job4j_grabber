@@ -1,12 +1,15 @@
 package ru.job4j.grabber;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 
 public class PsqlStore implements Store, AutoCloseable {
-
+    private static final Logger LOG = LoggerFactory.getLogger(PsqlStore.class.getName());
     private Connection cnn;
 
     public PsqlStore(Properties cfg) {
@@ -36,8 +39,8 @@ public class PsqlStore implements Store, AutoCloseable {
                     post.setId(generatedKeys.getInt(1));
                 }
             }
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
+        } catch (Exception e) {
+            LOG.error("Invalid values are specified. Save failed.");
         }
     }
 
@@ -51,8 +54,8 @@ public class PsqlStore implements Store, AutoCloseable {
                     posts.add(returnPost(resultSet));
                 }
             }
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
+        } catch (Exception e) {
+            LOG.error("Invalid values are specified. Get all failed.");
         }
         return posts;
     }
@@ -61,7 +64,7 @@ public class PsqlStore implements Store, AutoCloseable {
     public Post findById(int id) {
         Post post = null;
         try (PreparedStatement statement = cnn
-                .prepareStatement("select * from items where id = ?")) {
+                .prepareStatement("select * from post where id = ?")) {
             statement.setInt(1, id);
             try (ResultSet resultSet = statement.executeQuery()) {
                 if (resultSet.next()) {
@@ -69,7 +72,7 @@ public class PsqlStore implements Store, AutoCloseable {
                 }
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            LOG.error("Invalid values are specified. Find by id failed.");
         }
         return post;
     }
